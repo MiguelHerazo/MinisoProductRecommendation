@@ -7,47 +7,98 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ProductRepository {
-    private final String URL = "jdbc:mariadb://localhost:3316/MinisoDB"; // Cambia esto con tu port, a mi no se bien random me coge 3316 pero por lo general es 3306
-    private final String USER = "root"; // Cambia esto segun tu perfil de mariadb compadre
-    private final String PASSWORD = "migue"; // y la contraseña tambien ni modo pues
+    private final String url = "jdbc:mariadb://localhost:3316/MinisoDB"; // Cambiar según tu configuración
+    private final String user = "root"; // Cambiar según tu configuración
+    private final String password = "migue"; // Cambiar según tu configuración
 
-    // Metodo para agregar un producto
-    public void addProduct(String name, String category, double price, int stock) {
-        String query = "INSERT INTO Products (name, category, price, stock) VALUES (?, ?, ?, ?)";
+    // Método para establecer la conexión a la base de datos
+    private Connection connect() throws SQLException {
+        return DriverManager.getConnection(url, user, password);
+    }
 
-        try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
-             PreparedStatement statement = connection.prepareStatement(query)) {
-            statement.setString(1, name);
-            statement.setString(2, category);
-            statement.setDouble(3, price);
-            statement.setInt(4, stock);
-            statement.executeUpdate();
-            System.out.println("Producto agregado con éxito.");
+    // Método para agregar un nuevo producto
+    public void addProduct(Product product) {
+        String sql = "INSERT INTO Products (name, category, price, stock) VALUES (?, ?, ?, ?)";
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, product.getName());
+            pstmt.setString(2, product.getCategory());
+            pstmt.setDouble(3, product.getPrice());
+            pstmt.setInt(4, product.getStock());
+            pstmt.executeUpdate();
+            System.out.println("Producto agregado: " + product.getName());
         } catch (SQLException e) {
-            System.err.println("Error al agregar producto: " + e.getMessage());
+            System.out.println(e.getMessage());
         }
     }
 
-    // Metodo para obtener todos los productos
-    public List<Product> getAllProducts() {
-        List<Product> products = new ArrayList<>();
-        String query = "SELECT * FROM Products";
-
-        try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
-             Statement statement = connection.createStatement();
-             ResultSet resultSet = statement.executeQuery(query)) {
-
-            while (resultSet.next()) {
-                int productId = resultSet.getInt("product_id");
-                String name = resultSet.getString("name");
-                String category = resultSet.getString("category");
-                double price = resultSet.getDouble("price");
-                int stock = resultSet.getInt("stock");
-                products.add(new Product(productId, name, category, price, stock));
+    // Método para obtener un producto por ID
+    public Product getProductById(int productId) {
+        Product product = null;
+        String sql = "SELECT * FROM Products WHERE product_id = ?";
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, productId);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                product = new Product(
+                        rs.getInt("product_id"),
+                        rs.getString("name"),
+                        rs.getString("category"),
+                        rs.getDouble("price"),
+                        rs.getInt("stock")
+                );
             }
         } catch (SQLException e) {
-            System.err.println("Error al obtener productos: " + e.getMessage());
+            System.out.println(e.getMessage());
+        }
+        return product;
+    }
+
+    // Método para obtener todos los productos
+    public List<Product> getAllProducts() {
+        List<Product> products = new ArrayList<>();
+        String sql = "SELECT * FROM Products";
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql); ResultSet rs = pstmt.executeQuery()) {
+            while (rs.next()) {
+                Product product = new Product(
+                        rs.getInt("product_id"),
+                        rs.getString("name"),
+                        rs.getString("category"),
+                        rs.getDouble("price"),
+                        rs.getInt("stock")
+                );
+                products.add(product);
+            }
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
         }
         return products;
+    }
+
+    // Método para actualizar un producto
+    public void updateProduct(Product product) {
+        String sql = "UPDATE Products SET name = ?, category = ?, price = ?, stock = ? WHERE product_id = ?";
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, product.getName());
+            pstmt.setString(2, product.getCategory());
+            pstmt.setDouble(3, product.getPrice());
+            pstmt.setInt(4, product.getStock());
+            pstmt.setInt(5, product.getId()); // Asegúrate de tener un metodo getId() en tu modelo Product
+            pstmt.executeUpdate();
+            System.out.println("Producto actualizado: " + product.getName());
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    // Método para eliminar un producto
+    public void deleteProduct(int productId) {
+        String sql = "DELETE FROM Products WHERE product_id = ?";
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, productId);
+            pstmt.executeUpdate();
+            System.out.println("Producto eliminado con ID: " + productId);
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
     }
 }

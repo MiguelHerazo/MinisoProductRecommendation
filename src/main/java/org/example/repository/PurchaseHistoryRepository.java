@@ -7,9 +7,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PurchaseHistoryRepository {
-    private final String url = "jdbc:mariadb://localhost:3306/MinisoDB"; //lo mismo que comente en ProductRepository Compa ves y lee alla que pereza escribir dos veces
-    private final String user = "root"; // Cambar esto segun tu usuario de mariadb compai
-    private final String password = "migue"; // Cambar esto segun tu usuario de mariadb compai
+    private final String url = "jdbc:mariadb://localhost:3316/MinisoDB"; // Cambia el nombre de la base de datos si es necesario
+    private final String user = "root"; // Cambia esto según tu configuración
+    private final String password = "migue"; // Cambia esto según tu configuración
 
     // Metodo para establecer la conexión a la base de datos
     private Connection connect() throws SQLException {
@@ -17,14 +17,13 @@ public class PurchaseHistoryRepository {
     }
 
     // Registrar una nueva compra
-    public void createPurchase(Purchase purchase) {
-        String sql = "INSERT INTO PurchaseHistory (user_id, product_id, purchase_date) VALUES (?, ?, ?)";
+    public void createPurchase(int userId, int productId) {
+        String sql = "INSERT INTO PurchaseHistory (user_id, product_id) VALUES (?, ?)";
         try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, purchase.getUserId());
-            pstmt.setInt(2, purchase.getProductId());
-            pstmt.setDate(3, new java.sql.Date(purchase.getPurchaseDate().getTime()));
+            pstmt.setInt(1, userId);
+            pstmt.setInt(2, productId);
             pstmt.executeUpdate();
-            System.out.println("Compra registrada para el usuario ID: " + purchase.getUserId());
+            System.out.println("Compra registrada para el usuario ID: " + userId);
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
@@ -42,7 +41,7 @@ public class PurchaseHistoryRepository {
                         rs.getInt("purchase_id"),
                         rs.getInt("user_id"),
                         rs.getInt("product_id"),
-                        rs.getDate("purchase_date")
+                        rs.getDate("purchase_date") // Este campo debe ser añadido en la tabla PurchaseHistory si decides almacenarlo
                 );
                 purchases.add(purchase);
             }
